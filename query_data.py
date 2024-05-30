@@ -1,14 +1,20 @@
 import argparse
+import time
 from langchain_community.vectorstores.chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.llms.ollama import Ollama
+from langchain_openai import ChatOpenAI
 
 from get_embedding_function import get_embedding_function
+
+# Set the OpenAI API key
+import os
+os.environ["OPENAI_API_KEY"] = "my_key"
 
 CHROMA_PATH = "chroma"
 
 PROMPT_TEMPLATE = """
-Answer the question based only on the following context:
+The following context is from PDFs. Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer:
 
 {context}
 
@@ -18,16 +24,12 @@ Answer the question based on the above context: {question}
 """
 
 
-def main():
-    # Create CLI.
-    parser = argparse.ArgumentParser()
-    parser.add_argument("query_text", type=str, help="The query text.")
-    args = parser.parse_args()
-    query_text = args.query_text
-    query_rag(query_text)
+def question_answer(query_text, model):
+    return query_rag(query_text, model)
 
 
-def query_rag(query_text: str):
+def query_rag(query_text, model):
+    start_time = time.time() 
     # Prepare the DB.
     embedding_function = get_embedding_function()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
@@ -40,14 +42,21 @@ def query_rag(query_text: str):
     prompt = prompt_template.format(context=context_text, question=query_text)
     print(prompt)
 
-    model = Ollama(model="llama2")
-    response_text = model.invoke(prompt)
+    if model == "gpt-3.5-turbo-0125":
+        model = ChatOpenAI(model=model)
+    else:
+        model = Ollama(model=model)
+    
+    response_text = model.predict(prompt)
 
     sources = [doc.metadata.get("id", None) for doc, _score in results]
+    # formatted_sources = ", ".join([str(source) for source in sources])
     formatted_response = f"Response: {response_text}\nSources: {sources}"
     print(formatted_response)
-    return response_text
+    end_time = time.time()
+    print(f"Time taken: {(end_time - start_time):.2f} seconds")
 
+    return "Response: " + response_text + "\nSources: " + str(sources)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

@@ -1,19 +1,18 @@
 import argparse
 import os
 import shutil
+import time
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from get_embedding_function import get_embedding_function
 from langchain_community.vectorstores.chroma import Chroma
 
-
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
 
-
-def main():
-
+def run_database():
+    start_time = time.time() 
     # Check if the database should be cleared (using the --clear flag).
     parser = argparse.ArgumentParser()
     parser.add_argument("--reset", action="store_true", help="Reset the database.")
@@ -27,6 +26,8 @@ def main():
     chunks = split_documents(documents)
     add_to_chroma(chunks)
 
+    end_time = time.time()
+    print(f"Time taken: {(end_time - start_time):.2f} seconds")
 
 def load_documents():
     document_loader = PyPDFDirectoryLoader(DATA_PATH)
@@ -35,7 +36,7 @@ def load_documents():
 
 def split_documents(documents: list[Document]):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
+        chunk_size=1024,
         chunk_overlap=80,
         length_function=len,
         is_separator_regex=False,
@@ -73,7 +74,6 @@ def add_to_chroma(chunks: list[Document]):
 
 
 def calculate_chunk_ids(chunks):
-
     # This will create IDs like "data/monopoly.pdf:6:2"
     # Page Source : Page Number : Chunk Index
 
@@ -106,5 +106,5 @@ def clear_database():
         shutil.rmtree(CHROMA_PATH)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
