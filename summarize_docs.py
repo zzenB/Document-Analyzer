@@ -1,4 +1,8 @@
 import time
+
+from dotenv import load_dotenv
+load_dotenv()
+
 from langchain_community.llms.ollama import Ollama
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFDirectoryLoader
@@ -6,10 +10,6 @@ from langchain.prompts import PromptTemplate
 from langchain.schema.document import Document
 from langchain.chains.summarize import load_summarize_chain
 from langchain_openai import ChatOpenAI
-
-# Set the OpenAI API key
-import os
-os.environ["OPENAI_API_KEY"] = "my_key"
 
 # Code for loading a pdf document and then summarize it using langchain map reduce
 def load_documents(file_path):

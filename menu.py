@@ -1,6 +1,6 @@
 from upload_files import select_files_and_move
 from summarize_docs import summarize_docs
-from query_data import question_answer
+from query_data_v2 import query_rag
 from populate_database import run_database
 
 def show_menu():
@@ -64,8 +64,8 @@ def main():
                 enter_to_continue()
         elif choice == '3':
             if model:
-                query = input("Enter your question: ")
-                question_answer(query, model)
+                # query = input("Enter your question: ")
+                query_rag(model)
                 enter_to_continue()
             else:
                 print("Please select a model first.")

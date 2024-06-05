@@ -6,3 +6,5 @@ boto3
 langchain_community
 langchain_openai
 openai
+python-dotenv
+rapidocr-onnxruntime

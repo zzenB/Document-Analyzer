@@ -2,7 +2,8 @@ import argparse
 import os
 import shutil
 import time
-from langchain_community.document_loaders import PyPDFDirectoryLoader
+
+from langchain_community.document_loaders import PyPDFDirectoryLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from get_embedding_function import get_embedding_function
@@ -30,7 +31,7 @@ def run_database():
     print(f"Time taken: {(end_time - start_time):.2f} seconds")
 
 def load_documents():
-    document_loader = PyPDFDirectoryLoader(DATA_PATH)
+    document_loader = PyPDFDirectoryLoader(DATA_PATH, extract_images=True)
     return document_loader.load()
 
 
@@ -106,5 +107,5 @@ def clear_database():
         shutil.rmtree(CHROMA_PATH)
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    run_database()

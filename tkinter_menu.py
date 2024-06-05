@@ -6,7 +6,7 @@ import threading
 
 from upload_files import select_files_and_move
 from summarize_docs import summarize_docs
-from query_data import question_answer
+from query_data_v2 import query_rag
 from populate_database import run_database
 
 class App(tk.Tk):
@@ -82,7 +82,7 @@ class App(tk.Tk):
         if self.model:
             query = tk.simpledialog.askstring("Chat with the bot", "Enter your question:")
             if query:
-                answer = question_answer(query, self.model)
+                answer = query_rag(query, self.model)
                 if answer:
                     messagebox.showinfo("Answer", answer)
                 else:
