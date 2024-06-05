@@ -81,27 +81,6 @@ def create_summary_chain(model):
 
     return map_reduce_chain
 
-# def process_summary(chain, docs, session_id):
-#     history_chain = RunnableWithMessageHistory(
-#         chain,
-#         # get_session_history,
-#         lambda session_id: SQLChatMessageHistory(
-#             session_id=session_id, connection_string="sqlite:///sqlite.db", table_name="history"
-#         ),
-#         input_messages_key="docs",
-#         history_messages_key="chat_history",
-#         # output_messages_key="answer",
-#     )
-
-#     response = history_chain.invoke(
-#         {"docs": docs},
-#         config={
-#             "configurable": {"session_id": session_id}
-#         }
-#     )
-
-#     return response
-
 def summarize_docs(model: str):
     start_time = time.time()
 

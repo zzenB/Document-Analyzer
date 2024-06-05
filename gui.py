@@ -1,127 +1,150 @@
-import os
 import sys
-from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QPushButton, QFileDialog, QComboBox, QListWidget, QListWidgetItem, QLabel
-from PyQt5.QtGui import QIcon, QPixmap
-import time
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QLineEdit, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QScrollArea, QListWidget, QListWidgetItem
+from PyQt5.QtCore import Qt, QPoint
+from qfluentwidgets import ListWidget, ComboBox, PrimaryPushButton
 
-# Import existing code
-from upload_files import select_files_and_move
-from summarize_docs import summarize_docs
-from query_data_v2 import query_rag
-from populate_database import run_database, clear_database
-from db_utils import create_db, generate_session_id, display_chat_history
+WINDOW_WIDTH = 1366
+WINDOW_HEIGHT = 768
+SIDEBAR_WIDTH = 200
+SIDEBAR_HEIGHT = 400
 
-class MainWindow(QMainWindow):
+class ChatGPTUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Document Summarizer and Chat Bot")
-        self.setGeometry(100, 100, 1366, 768)
-
-        # Create main layout
-        main_layout = QHBoxLayout()
-
-        # Left Sidebar
-        left_sidebar = QWidget()
-        left_sidebar_layout = QVBoxLayout()
-        left_sidebar.setLayout(left_sidebar_layout)
-
-        self.chat_list = QListWidget()
-        left_sidebar_layout.addWidget(QLabel("Chat History"))
-        left_sidebar_layout.addWidget(self.chat_list)
-
-        # Right Sidebar
-        right_sidebar = QWidget()
-        right_sidebar_layout = QVBoxLayout()
-        right_sidebar.setLayout(right_sidebar_layout)
-
-        self.model_combo = QComboBox()
-        self.model_combo.addItems(["gpt-3.5-turbo-0125", "Other Model"])
-        right_sidebar_layout.addWidget(QLabel("Select Model"))
-        right_sidebar_layout.addWidget(self.model_combo)
-
-        upload_button = QPushButton("Upload Documents")
-        upload_button.clicked.connect(self.upload_documents)
-        right_sidebar_layout.addWidget(upload_button)
-
-        # Main Window
-        main_window = QWidget()
-        main_window_layout = QVBoxLayout()
-        main_window.setLayout(main_window_layout)
-
-        self.chat_text = QTextEdit()
-        self.chat_text.setReadOnly(True)
-        main_window_layout.addWidget(self.chat_text)
-
-        input_layout = QHBoxLayout()
-        self.input_field = QLineEdit()
-        input_layout.addWidget(self.input_field)
-        send_button = QPushButton("Send")
-        send_button.clicked.connect(self.send_message)
-        input_layout.addWidget(send_button)
-        main_window_layout.addLayout(input_layout)
-
-        # Floating Button
-        floating_button = QPushButton("Summarize Documents")
-        floating_button.setStyleSheet("background-color: #4CAF50; color: white; border-radius: 20px; padding: 10px 20px;")
-        floating_button.clicked.connect(self.summarize_documents)
-
-        # Add widgets to main layout
-        main_layout.addWidget(left_sidebar)
-        main_layout.addWidget(main_window)
-        main_layout.addWidget(right_sidebar)
+        self.setWindowTitle("Document Analyzer")
+        self.setGeometry(100, 100, 1600, 900)
 
         central_widget = QWidget()
-        central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
+        
+        main_layout = QVBoxLayout(central_widget)
+        central_layout = QHBoxLayout()
+        main_layout.addLayout(central_layout)
 
-        # Add floating button to the main window
-        floating_button_layout = QHBoxLayout()
-        floating_button_layout.addStretch()
-        floating_button_layout.addWidget(floating_button)
-        floating_button_layout.addStretch()
-        main_window_layout.addLayout(floating_button_layout)
+        self.create_left_sidebar(central_layout)
+        self.create_right_main_area(central_layout)
 
-        self.documents = []
-        self.selected_model = "gpt-3.5-turbo-0125"
-        self.session_id = None
+    def create_left_sidebar(self, parent_layout):
+        sidebar_layout = QVBoxLayout()
+
+        self.chat_list = self.create_list_widget()
+        self.doc_list = self.create_list_widget()
+
+        sidebar_layout.addWidget(self.chat_list)
+        sidebar_layout.addWidget(self.doc_list)
+
+        sidebar_layout.addStretch()
+
+        self.create_sidebar_buttons(sidebar_layout)
+        parent_layout.addLayout(sidebar_layout)
+
+    def create_list_widget(self):
+        widget = ListWidget(self)
+        widget.setMaximumWidth(SIDEBAR_WIDTH)
+        widget.setMinimumHeight(SIDEBAR_HEIGHT)
+        widget.setStyleSheet("""
+            QListWidget {
+                border: 1px solid #D3D3D3;  /* Soft grey border */
+                border-radius: 5px;  /* Rounded corners */
+                padding: 5px;  /* Add some padding inside the border */
+                background-color: transparent;  /* Set background to transparent */
+            }
+            QListWidget::item {
+                padding: 5px 5px 5px 5px 20px;  /* Add some padding to the list items */
+            }
+        """)
+        # stands = [
+        #     "chat1", "chat2", "chat3", "chat4",
+        #     "chat5", "chat6", "chat7", "chat8",
+        # ]
+        # for stand in stands:
+        #     item = QListWidgetItem(stand)
+        #     widget.addItem(item)
+        return widget
+
+    def create_sidebar_buttons(self, sidebar_layout):
+        button_layout = QVBoxLayout()
+        sidebar_layout.addLayout(button_layout)
+
+        buttons = [
+            ("Upload Documents", self.upload_documents),
+            ("New Chat", self.new_chat),
+            ("Settings", self.open_settings)
+        ]
+
+        for text, func in buttons:
+            button = PrimaryPushButton(text, self)
+            button.clicked.connect(func)
+            button_layout.addWidget(button)
+            button_layout.addSpacing(5)
+
+        sidebar_layout.addStretch()
 
     def upload_documents(self):
-        file_dialog = QFileDialog()
-        file_dialog.setFileMode(QFileDialog.ExistingFiles)
-        if file_dialog.exec_():
-            selected_files = file_dialog.selectedFiles()
-            for file_path in selected_files:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    file_content = f.read()
-                self.documents.append(file_content)
-            print(f"Uploaded {len(selected_files)} documents.")
+        print("Upload Documents")
+
+    def new_chat(self):
+        print("New Chat")
+
+    def open_settings(self):
+        print("Open Settings")
+
+    def create_right_main_area(self, parent_layout):
+        right_layout = QVBoxLayout()
+        parent_layout.addLayout(right_layout)
+
+        self.model_combo_box = ComboBox(self)
+        self.model_combo_box.setPlaceholderText("Select Model")
+        model_items = ['Model A', 'Model B', 'Model C', 'Model D']
+        self.model_combo_box.addItems(model_items)
+        self.model_combo_box.setCurrentIndex(-1)
+        self.model_combo_box.currentTextChanged.connect(self.model_changed)
+        right_layout.addWidget(self.model_combo_box)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+
+        self.chat_display = QTextEdit()
+        self.chat_display.setReadOnly(True)
+        self.chat_display.setStyleSheet("background-color: white; border: none;")
+        self.scroll_area.setWidget(self.chat_display)
+        right_layout.addWidget(self.scroll_area)
+
+        input_layout = QHBoxLayout()
+        self.chat_input = QLineEdit()
+        self.chat_input.setPlaceholderText("Type your message here...")
+        input_layout.addWidget(self.chat_input)
+
+        self.send_button = QPushButton("Send")
+        self.send_button.clicked.connect(self.send_message)
+        input_layout.addWidget(self.send_button)
+        right_layout.addLayout(input_layout)
 
     def send_message(self):
-        message = self.input_field.text()
-        if message:
-            self.chat_text.append(f"Human: {message}")
-            self.input_field.clear()
+        user_message = self.chat_input.text()
+        if user_message:
+            self.chat_display.append(f"User: {user_message}")
+            self.chat_input.clear()
+            self.chat_display.append("ChatGPT: This is a response.")
 
-            response = query_rag(self.selected_model, message, self.session_id)
-            self.chat_text.append(f"AI: {response}")
+    def model_changed(self, text):
+        print(f"Selected Model: {text}")
+    
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPos()
 
-    def summarize_documents(self):
-        if not self.documents:
-            return
-
-        selected_model = self.model_combo.currentText()
-        summary = summarize_docs(selected_model, self.documents)
-        self.chat_text.append(f"Summary: {summary}")
-
-    def create_new_session(self):
-        self.session_id = str(int(time.time()))
-        item = QListWidgetItem(self.session_id)
-        self.chat_list.addItem(item)
+    def mouseMoveEvent(self, event):
+        delta = QPoint(event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
 
 if __name__ == "__main__":
+    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
     app = QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon('path/to/icon.png'))
-    window = MainWindow()
+    window = ChatGPTUI()
     window.show()
     sys.exit(app.exec_())
