@@ -8,3 +8,7 @@ langchain_openai
 openai
 python-dotenv
 rapidocr-onnxruntime
+unstructured[pptx, md, xlsx]
+markdown
+pyqt5
+PyQt-Fluent-Widgets[full] -i https://pypi.org/simple/
