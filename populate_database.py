@@ -3,14 +3,22 @@ import os
 import shutil
 import time
 
-from langchain_community.document_loaders import PyPDFDirectoryLoader, Docx2txtLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from get_embedding_function import get_embedding_function
 from langchain_community.vectorstores.chroma import Chroma
+from preprocess import documents_directory_loader, split_documents
 
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
+
+types = [
+    ".pdf",
+    ".docx",
+    ".md",
+    ".pptx",
+    ".xlsx",
+    ".csv"
+]
 
 def run_database():
     start_time = time.time() 
@@ -23,29 +31,20 @@ def run_database():
         clear_database()
 
     # Create (or update) the data store.
-    documents = load_documents()
-    chunks = split_documents(documents)
-    add_to_chroma(chunks)
+    # documents = load_documents(DATA_PATH)
+    # chunks = split_documents(documents)
+    # add_to_chroma(chunks)
+    for file_type in types:
+        print(f"Processing {file_type} files...")
+        documents = documents_directory_loader(file_type, DATA_PATH)
+        chunks = split_documents(documents)
+        add_to_chroma(file_type, chunks)
 
     end_time = time.time()
     print(f"Time taken: {(end_time - start_time):.2f} seconds")
 
-def load_documents():
-    document_loader = PyPDFDirectoryLoader(DATA_PATH, extract_images=True)
-    return document_loader.load()
 
-
-def split_documents(documents: list[Document]):
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1024,
-        chunk_overlap=80,
-        length_function=len,
-        is_separator_regex=False,
-    )
-    return text_splitter.split_documents(documents)
-
-
-def add_to_chroma(chunks: list[Document]):
+def add_to_chroma(file_type: str, chunks: list[Document]):
     # Load the existing database.
     db = Chroma(
         persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
@@ -71,7 +70,7 @@ def add_to_chroma(chunks: list[Document]):
         db.add_documents(new_chunks, ids=new_chunk_ids)
         db.persist()
     else:
-        print("✅ No new documents to add")
+        print(f"✅ No new documents {file_type} to add\n")
 
 
 def calculate_chunk_ids(chunks):
@@ -105,6 +104,8 @@ def calculate_chunk_ids(chunks):
 def clear_database():
     if os.path.exists(CHROMA_PATH):
         shutil.rmtree(CHROMA_PATH)
+    else:
+        print("No database to clear.")
 
 
 if __name__ == "__main__":

@@ -1,16 +1,17 @@
 from upload_files import select_files_and_move
 from summarize_docs import summarize_docs
 from query_data_v2 import query_rag
-from populate_database import run_database
+from populate_database import run_database, clear_database
 
 def show_menu():
     print("PDF Analyzer")
     print("------------")
     print("1. Upload PDF files")
-    print("2. Summarize PDF content")
-    print("3. Chat with the bot")
-    print("4. Select model")
-    print("5. Exit")
+    print("2. Remove vector database")
+    print("3. Summarize PDF content")
+    print("4. Chat with the bot")
+    print("5. Select model")
+    print("6. Exit")
 
 def enter_to_continue():
     input("\nPress Enter to continue...\n")
@@ -42,7 +43,7 @@ def main():
     model = ""
     while True:
         show_menu()
-        choice = input("Enter your choice (1-4): ")
+        choice = input("Enter your choice (1-6): ")
 
         if choice == '1':
             check = select_files_and_move("data")
@@ -56,13 +57,16 @@ def main():
 
             enter_to_continue()
         elif choice == '2':
+            clear_database()
+            enter_to_continue()
+        elif choice == '3':
             if model:
                 summarize_docs(model)
                 enter_to_continue()
             else:
                 print("Please select a model first.")
                 enter_to_continue()
-        elif choice == '3':
+        elif choice == '4':
             if model:
                 # query = input("Enter your question: ")
                 query_rag(model)
@@ -70,10 +74,10 @@ def main():
             else:
                 print("Please select a model first.")
                 enter_to_continue()
-        elif choice == '4':
+        elif choice == '5':
             model = select_model()
             print(f"Selected model is {model}\n")
-        elif choice == '5':
+        elif choice == '6':
             print("Exiting the program.")
             break
         else:

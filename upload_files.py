@@ -8,7 +8,8 @@ def select_files_and_move(destination_folder):
     root.withdraw()
     
     # Open the file dialog to select files
-    file_paths = filedialog.askopenfilenames(title="Select PDF files", filetypes=[("PDF Files", "*.pdf")])
+    # file_paths = filedialog.askopenfilenames(title="Select PDF files", filetypes=[("PDF Files", "*.pdf")])
+    file_paths = filedialog.askopenfilenames(title="Select files", filetypes=[("PDF Files", "*.pdf"), ("Word Files", "*.docx"), ("Markdown Files", "*.md"), ("PowerPoint Files", "*.pptx"), ("Excel Files", "*.xlsx"), ("CSV Files", "*.csv")])
 
     if not file_paths:
         print("Error: No files were selected.")

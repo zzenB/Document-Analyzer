@@ -21,8 +21,6 @@ from langchain_core.prompts import MessagesPlaceholder
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from get_session_history import get_session_history
-
 
 from get_embedding_function import get_embedding_function
 
