@@ -27,28 +27,36 @@ def generate_session_id():
 
     return new_session_id
 
-def display_chat_history():
-    # Display all chat history based on session_ids
+def return_chat_history():
+    # Display chat history based on session_id
     conn = sqlite3.connect('sqlite.db')
+    result = {}
+    data = []
     c = conn.cursor()
 
     c.execute("SELECT DISTINCT session_id FROM history")
     session_ids = [row[0] for row in c.fetchall()]
 
     for session_id in session_ids:
-        print(f"Session ID: {session_id}")
         c.execute("SELECT message FROM history WHERE session_id = ?", (session_id,))
         messages = c.fetchall()
-        print(type(messages))
         for message in messages:
             res = json.loads(message[0])
-            print(f"{res["type"]}: {res["data"]["content"]}\n")
-    
+            # print(f"res at session_id {session_id}: {res}\n")
+            # data.append({"session_id": session_id, res['type']: res['data']['content']})
+            data.append({res['type']: res['data']['content']})
+        # print(f"data at session_id {session_id}: {data}\n")
+        result[session_id] = data[:]
+        # print(f"result at session_id {session_id}: {result[session_id] }\n")
+        data.clear()
+
+    # print(f"result: {result}")
     # Close the database connection
     conn.close()
 
+    return result
 
-# if __name__ == "__main__":
-#     display_chat_history()
+if __name__ == "__main__":
+    return_chat_history()
 
     

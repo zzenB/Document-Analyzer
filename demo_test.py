@@ -1,7 +1,7 @@
 import sys
 import sqlite3
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QLineEdit, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QScrollArea, QListWidget, QListWidgetItem, QFileDialog
-from PyQt5.QtCore import Qt, QPoint, QThreadPool, QRunnable, pyqtSlot, pyqtSignal, QObject
+from PyQt5.QtCore import Qt, QPoint, QThread, pyqtSignal
 from qfluentwidgets import ListWidget, ComboBox, PrimaryPushButton
 from qfluentwidgets import InfoBarIcon, InfoBar, PushButton, setTheme, Theme, FluentIcon, InfoBarPosition, InfoBarManager
 
@@ -17,44 +17,36 @@ WINDOW_HEIGHT = 900
 SIDEBAR_WIDTH = 200
 SIDEBAR_HEIGHT = 400
 
-class WorkerSignals(QObject):
-    finished = pyqtSignal(bool)
-    result = pyqtSignal(str)
+class DatabaseThread(QThread):
+   response = pyqtSignal(bool)  # Signal to indicate when the database operation is finished
 
+   def run(self):
+       tmp = run_database()
+       self.response.emit(tmp)  # Emit the signal with the result
 
-class Worker(QRunnable):
-    '''
-    Worker thread
+class QueryThread(QThread):
+   response = pyqtSignal(str)
 
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+   def __init__(self, model, session_id, user_message, parent=None):
+        super().__init__(parent)
+        self.model = model
+        self.session_id = session_id
+        self.user_message = user_message
+        print("init success!")
+        print(f"Session ID: {session_id}")
+        print(f"Model: {model}")
+        print(f"User Message: {user_message}\n")
 
-    :param callback: The function callback to run on this worker thread. Supplied args and
-                     kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-
-    '''
-
-    def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
-        # Store constructor arguments (re-used for processing)
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-        self.signals = WorkerSignals()
-
-    @pyqtSlot()
-    def run(self):
-        '''
-        Initialise the runner function with passed args, kwargs.
-        '''
-        result = self.fn(*self.args, **self.kwargs)
-        if type(result) == bool:
-            self.signals.finished.emit(result)
-        else:
-            self.signals.result.emit(result)
-
+   def run(self):
+        try:
+            print("running query thread")
+            answer = query_rag(self.model, self.session_id, self.user_message)
+            print(f"answer is {answer}")
+            self.response.emit(answer)
+        except Exception as e:
+            print("oh oh")
+            error_message = f"Error: {str(e)}"
+            self.response.emit(error_message)
 
 @InfoBarManager.register('Custom')
 class CustomInfoBarManager(InfoBarManager):
@@ -88,9 +80,6 @@ class DocAnalyzerUI(QMainWindow):
        self.load_pdfs()
        if self.chat_list.count() < 1:
            self.new_chat()
-
-       self.threadpool = QThreadPool()
-       print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
        self.chat_list.itemClicked.connect(self.display_chat_content)
        self.chat_list.itemClicked.connect(self.update_chat)
@@ -187,11 +176,9 @@ class DocAnalyzerUI(QMainWindow):
            if selected_files:
                tmp = select_files_and_move("data", selected_files)
                self.createWarningInfoBar()
-
-               worker_db = Worker(run_database)
-               worker_db.signals.finished.connect(self.database_operation_finished)
-
-               self.threadpool.start(worker_db)
+               self.db_thread = DatabaseThread()
+               self.db_thread.finished.connect(self.database_operation_finished)
+               self.db_thread.start()
 
    def database_operation_finished(self, result):
        if result:
@@ -304,9 +291,9 @@ class DocAnalyzerUI(QMainWindow):
             session_id = self.selected_chat.split("_")[1]
             model = self.selected_model
 
-            worker_cb = Worker(query_rag, model, session_id, user_message)
-            worker_cb.signals.result.connect(self.handle_response)
-            self.threadpool.start(worker_cb)
+            self.query_thread = QueryThread(str(model), str(session_id), str(user_message))
+            self.query_thread.finished.connect(self.handle_response)
+            self.query_thread.start()
             # self.chat_input.clear()
 
    def handle_response(self, response):

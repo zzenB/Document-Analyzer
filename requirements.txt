@@ -12,3 +12,6 @@ unstructured[pptx, md, xlsx]
 markdown
 pyqt5
 PyQt-Fluent-Widgets[full] -i https://pypi.org/simple/
+doc2text
+ollama
+pymupdf

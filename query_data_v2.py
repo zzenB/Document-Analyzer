@@ -20,34 +20,30 @@ from langchain_core.prompts import MessagesPlaceholder
 from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
-from get_embedding_function import get_embedding_function
-from db_utils import create_db, generate_session_id
+from vector_store import load_vector_store
 
 chat_history = {}
 
 CHROMA_PATH = "chroma"
 
-def create_chain(model):
+def create_chain(model: str):
     if model == "gpt-3.5-turbo-0125":
         model = ChatOpenAI(model=model)
     else:
         model = Ollama(model=model)
-
+    
     # Prepare the DB.
-    embedding_function = get_embedding_function()
-    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
+    db = load_vector_store()
     retriever = db.as_retriever(search_kwargs={"k": 3})
 
     # Initialize the chains
     # prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt_template = ChatPromptTemplate.from_messages([
-        ("system", "The following context is from a single or set of documents. Use the following pieces of context to answer the user's question. \
-         If you don't know the answer, just say that you don't know, don't try to make up an answer \
-         If you think the question needs more information/context, don't hesitate to NOT ANSWER the question and ask the user for more information: {context}"),
+        ("system", "You are a virtual assistant chatbot responsible for answering user's questions about documents. The following context is from a single or set of documents. Use ONLY the following pieces of context to answer the user's question. If you don't know the answer, just say that you don't know, don't try to make up an answer: {context}"),
         MessagesPlaceholder(variable_name="chat_history"),
         ("human", "{input}")
     ])
-    
+
     document_chain = create_stuff_documents_chain(
         llm=model, 
         prompt=prompt_template
@@ -71,9 +67,8 @@ def create_chain(model):
     )
     return retrieval_chain
 
-
-
 def process_chat(chain, query_text, session_id):
+
     history_chain = RunnableWithMessageHistory(
         chain,
         # get_session_history,
@@ -88,47 +83,26 @@ def process_chat(chain, query_text, session_id):
     response = history_chain.invoke(
         {"input": query_text},
         config={
-            "configurable": {"session_id": session_id}
+            "configurable": {"session_id": session_id},
         }
     )
-
+    print(f"response inside process_chat is: {response}\n")
     return response
 
-def query_rag(model):
-    start_time = time.time() 
 
-    create_db()
+def query_rag(model: str, session_id: str, query_text: str):
+    # start_time = time.time() 
+
     chain = create_chain(model)
+    response = process_chat(chain, query_text, session_id)
+    sources = [doc.metadata.get("id", None) for doc in response["context"]]
+
+    content = response["answer"]
+    formatted_response = f"<b>AI:</b> {content}<br><br><b>Sources:</b> {sources}"
     
-    session_id = generate_session_id()
-    while True:
-        query_text = input("(Type \"q\" to quit)\n > ")
-        if query_text.lower() == "q":
-            print("Exiting program!")
-            break
-        
-        response = process_chat(chain, query_text, session_id)
-
-        sources = [doc.metadata.get("id", None) for doc in response["context"]]
-
-        # For debugging:
-        print(f"Response is:\n-------{response}-------\n")
-        # for target_id in sources:
-        #     for doc in response["context"]:
-        #         if doc.metadata["id"] == target_id:
-        #             print("---")
-        #             print(f"For ID: {target_id}\n")
-        #             print(doc.page_content)
-        #             print("---\n")
-
-        content = response["answer"]
-        formatted_response = f"Response: {content}\n\nSources: {sources}"
-        print(formatted_response)
-
-    end_time = time.time()
-    print(f"Time taken: {(end_time - start_time):.2f} seconds")
-
-    # return formatted_response
-
+    # end_time = time.time()
+    # print(f"Time taken: {(end_time - start_time):.2f} seconds")
+    
+    return formatted_response
 if __name__ == "__main__":
-    query_rag()
+    print(query_rag("gpt-3.5-turbo-0125", "4", "What is fuzzy set then?"))

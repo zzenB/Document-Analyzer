@@ -20,6 +20,11 @@ types = [
     ".csv"
 ]
 
+def load_vector_store():
+    embedding_function = get_embedding_function()
+    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
+    return db
+
 def run_database():
     start_time = time.time() 
     # Check if the database should be cleared (using the --clear flag).
@@ -29,19 +34,36 @@ def run_database():
     if args.reset:
         print("✨ Clearing Database")
         clear_database()
+    
+    docs_used = []
 
-    # Create (or update) the data store.
-    # documents = load_documents(DATA_PATH)
-    # chunks = split_documents(documents)
-    # add_to_chroma(chunks)
     for file_type in types:
         print(f"Processing {file_type} files...")
-        documents = documents_directory_loader(file_type, DATA_PATH)
+        documents = documents_directory_loader(file_type, 'data/')
+        if documents:
+            docs_used.append(documents)
         chunks = split_documents(documents)
+        # print(f"Chunks: {chunks}")
         add_to_chroma(file_type, chunks)
 
     end_time = time.time()
     print(f"Time taken: {(end_time - start_time):.2f} seconds")
+    return True
+
+def clear_database():
+    if os.path.exists(CHROMA_PATH):
+        shutil.rmtree(CHROMA_PATH)
+    else:
+        print("No database to clear.")
+
+def docs_used_in_chroma():
+    db = load_vector_store()
+    all_ids = db.get(include=[])["ids"]
+
+    docs_used = list(set([doc_id.split(":")[0] for doc_id in all_ids]))
+    print(f"Number of documents in DB: {len(docs_used)}")
+    print(f"docs_used: \n{docs_used}")
+    return docs_used
 
 
 def add_to_chroma(file_type: str, chunks: list[Document]):
@@ -68,7 +90,7 @@ def add_to_chroma(file_type: str, chunks: list[Document]):
         print(f"👉 Adding new documents: {len(new_chunks)}")
         new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
         db.add_documents(new_chunks, ids=new_chunk_ids)
-        db.persist()
+        # db.persist()
     else:
         print(f"✅ No new documents {file_type} to add\n")
 
@@ -100,13 +122,6 @@ def calculate_chunk_ids(chunks):
 
     return chunks
 
-
-def clear_database():
-    if os.path.exists(CHROMA_PATH):
-        shutil.rmtree(CHROMA_PATH)
-    else:
-        print("No database to clear.")
-
-
 if __name__ == "__main__":
     run_database()
+    # docs_used_in_chroma()

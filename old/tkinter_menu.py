@@ -82,7 +82,7 @@ class App(tk.Tk):
         if self.model:
             query = tk.simpledialog.askstring("Chat with the bot", "Enter your question:")
             if query:
-                answer = query_rag(query, self.model)
+                answer = query_rag(self.model, "999", query)
                 if answer:
                     messagebox.showinfo("Answer", answer)
                 else:
