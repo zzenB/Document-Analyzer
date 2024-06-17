@@ -101,7 +101,7 @@ class DocAnalyzerUI(QMainWindow):
    def init_ui(self):
        self.setWindowTitle("Document Analyzer")
        self.setGeometry(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT)
-       self.setWindowFlags(Qt.FramelessWindowHint)  # make the window frameless
+    #    self.setWindowFlags(Qt.FramelessWindowHint)  # make the window frameless
     #    self.setAttribute(Qt.WA_TranslucentBackground)
 
        central_widget = QWidget()
