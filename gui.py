@@ -458,6 +458,7 @@ class DocAnalyzerUI(QMainWindow):
                     formatted_chat += "</ul>"
                 
                 formatted_chat += "<br>"
+        print(f"formatted_chat {formatted_chat}")
         html_formatted_chat = markdown.markdown(formatted_chat)
         self.chat_display.setHtml(html_formatted_chat)
 
@@ -518,6 +519,7 @@ class DocAnalyzerUI(QMainWindow):
         user_message = self.chat_input.text()
         if user_message:
             self.chat_display.append(f"<b>User:</b> {user_message}<br><br>")
+            self.chat_contents[self.selected_chat].append({"human": user_message})
             session_id = self.selected_chat.split("_")[1]
             model = self.selected_model
 
