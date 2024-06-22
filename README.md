@@ -9,5 +9,9 @@ To run the source code:
     * Requires at least Python 3.12 (lesser version was not tested)
 3. Install the requirements.txt `pip install -r requirements.txt`
 4. Type "python gui.py" to run the app
-OR
+
+
+
+
+OR <br>
 1. Run gui.exe (still not working, some dependency issues)
