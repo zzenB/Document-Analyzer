@@ -1,5 +1,3 @@
-import time
-
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -11,10 +9,9 @@ from langchain.chains import MapReduceDocumentsChain, ReduceDocumentsChain
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 
 from langchain_community.chat_message_histories import SQLChatMessageHistory
-from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from preprocess import documents_directory_loader, split_documents
-from db_utils import generate_session_id, create_db
+from db_utils import create_db
 
 # Code for loading a pdf document and then summarize it using langchain map reduce
 
@@ -30,7 +27,7 @@ types = [
 ]
 
 def create_summary_chain(model):
-    if model == "gpt-3.5-turbo-0125":
+    if model == "gpt-3.5-turbo-0125" or model == "gpt-4-turbo":
         model = ChatOpenAI(model=model)
     else:
         model = Ollama(model=model)
@@ -39,7 +36,7 @@ def create_summary_chain(model):
     map_prompt = """
     The following is a set of documents:
     "{docs}"
-    Based on the list of docs, please identify the main themes
+    Based on the list of docs, please identify the main themes. If the docs are empty, just say so and do not summarize anything.
     Helpful Answer:
     """
     map_prompt_template = PromptTemplate(template=map_prompt, input_variables=["text"])
@@ -49,7 +46,7 @@ def create_summary_chain(model):
     reduce_template = """
     The following is set of summaries:
     {docs}
-    Take these and distill it into a final, consolidated summary of the main themes. 
+    Take these and distill it into a final, consolidated summary of the main themes.
     Helpful Answer:
     """
     reduce_prompt = PromptTemplate.from_template(reduce_template)
@@ -81,12 +78,11 @@ def create_summary_chain(model):
 
     return map_reduce_chain
 
-def summarize_docs(model: str):
-    start_time = time.time()
-
+def summarize_docs(model, session_id):
     split_docs = []
     for file_type in types:
         documents = documents_directory_loader(file_type, DATA_PATH)
+        print(documents)
         splits = split_documents(documents)
         split_docs.extend(splits)
 
@@ -94,8 +90,6 @@ def summarize_docs(model: str):
 
     create_db()
     chain = create_summary_chain(model)
-
-    session_id = generate_session_id()
     
     response = chain.invoke(split_docs)
     summaries = response["output_text"]
@@ -107,9 +101,5 @@ def summarize_docs(model: str):
     chat_message_history.add_ai_message(summaries)
 
     print(f"Summaries:\n{summaries}")
-
-    end_time = time.time()
-    print(f"Time taken: {(end_time - start_time):.2f} seconds")
-
+    
     return summaries
-

@@ -1,5 +1,4 @@
-import time
-
+import dotenv
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -21,13 +20,14 @@ from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from vector_store import load_vector_store
+from db_utils import update_message_with_sources
 
 chat_history = {}
 
 CHROMA_PATH = "chroma"
 
 def create_chain(model: str):
-    if model == "gpt-3.5-turbo-0125":
+    if model == "gpt-3.5-turbo-0125" or model == "gpt-4-turbo":
         model = ChatOpenAI(model=model)
     else:
         model = Ollama(model=model)
@@ -86,22 +86,24 @@ def process_chat(chain, query_text, session_id):
             "configurable": {"session_id": session_id},
         }
     )
-    print(f"response inside process_chat is: {response}\n")
-    return response
+    sources = [doc.metadata.get("id", None) for doc in response["context"]]
+    return response, sources
 
 
 def query_rag(model: str, session_id: str, query_text: str):
-    # start_time = time.time() 
-
     chain = create_chain(model)
-    response = process_chat(chain, query_text, session_id)
-    sources = [doc.metadata.get("id", None) for doc in response["context"]]
+    response, sources = process_chat(chain, query_text, session_id)
 
-    content = response["answer"]
-    formatted_response = f"<b>AI:</b> {content}<br><br><b>Sources:</b> {sources}"
+    f_answer = f"{response["answer"]}<br>"
+    f_sources = f"<b>Sources:</b><ul>"
+    for source in sources:
+        f_sources += f"<li>{source}</li>"
+    f_sources += "</ul>"
     
-    # end_time = time.time()
-    # print(f"Time taken: {(end_time - start_time):.2f} seconds")
+    print(f"f_answer: {f_answer}")
+    print(f"f_sources: {f_sources}")
+    formatted_response = [f_answer, f_sources, sources]
+    update_message_with_sources(session_id, sources)
     
     return formatted_response
 if __name__ == "__main__":

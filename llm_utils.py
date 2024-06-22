@@ -1,4 +1,8 @@
 import ollama
+from openai import OpenAI
+
+from dotenv import load_dotenv
+load_dotenv()
 from langchain_community.embeddings.ollama import OllamaEmbeddings
 
 def get_embedding_function():

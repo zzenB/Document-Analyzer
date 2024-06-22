@@ -27,6 +27,37 @@ def generate_session_id():
 
     return new_session_id
 
+def update_message_with_sources(session_id, sources):
+    conn = sqlite3.connect("sqlite.db")
+    cursor = conn.cursor()
+
+    # Get the last message for the given session_id
+    cursor.execute("""
+        SELECT id, message FROM history
+        WHERE session_id = ? 
+        ORDER BY id DESC LIMIT 1
+    """, (session_id,))
+    
+    row = cursor.fetchone()
+    if row:
+        message_id, message_json = row
+        message_data = json.loads(message_json)
+
+        if message_data["type"] == "ai":
+            # Add sources as a separate key
+            message_data["data"]["sources"] = sources
+
+            # Update the message in the database
+            updated_message_json = json.dumps(message_data)
+            cursor.execute("""
+                UPDATE history SET message = ? WHERE id = ?
+            """, (updated_message_json, message_id))
+            
+            conn.commit()
+
+
+    conn.close()
+
 def return_chat_history():
     # Display chat history based on session_id
     conn = sqlite3.connect('sqlite.db')
@@ -40,17 +71,22 @@ def return_chat_history():
     for session_id in session_ids:
         c.execute("SELECT message FROM history WHERE session_id = ?", (session_id,))
         messages = c.fetchall()
+        
         for message in messages:
             res = json.loads(message[0])
-            # print(f"res at session_id {session_id}: {res}\n")
-            # data.append({"session_id": session_id, res['type']: res['data']['content']})
-            data.append({res['type']: res['data']['content']})
-        # print(f"data at session_id {session_id}: {data}\n")
+            # data.append({res['type']: res['data']['content']})
+            if res['type'] == 'human':
+                data.append({res['type']: res['data']['content']})
+            elif res['type'] == 'ai':
+                ai_message = {
+                    'content': res['data']['content'],
+                    'sources': res['data'].get('sources', [])  # Include sources if available
+                }
+                data.append({res['type']: ai_message})
+            
         result[session_id] = data[:]
-        # print(f"result at session_id {session_id}: {result[session_id] }\n")
         data.clear()
 
-    # print(f"result: {result}")
     # Close the database connection
     conn.close()
 
