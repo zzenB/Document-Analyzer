@@ -7,3 +7,4 @@ rag
 temp_data
 *.db
 build
+gui.spec
