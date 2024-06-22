@@ -11,6 +11,7 @@ def create_db():
     conn.close()
 
 def generate_session_id():
+    # Generate session id for use in chat history
     conn = sqlite3.connect('sqlite.db')
     c = conn.cursor()
 
@@ -28,10 +29,10 @@ def generate_session_id():
     return new_session_id
 
 def update_message_with_sources(session_id, sources):
+    # Update the AI message with sources
     conn = sqlite3.connect("sqlite.db")
     cursor = conn.cursor()
 
-    # Get the last message for the given session_id
     cursor.execute("""
         SELECT id, message FROM history
         WHERE session_id = ? 
@@ -44,10 +45,8 @@ def update_message_with_sources(session_id, sources):
         message_data = json.loads(message_json)
 
         if message_data["type"] == "ai":
-            # Add sources as a separate key
             message_data["data"]["sources"] = sources
 
-            # Update the message in the database
             updated_message_json = json.dumps(message_data)
             cursor.execute("""
                 UPDATE history SET message = ? WHERE id = ?
@@ -92,7 +91,6 @@ def return_chat_history():
 
     return result
 
-if __name__ == "__main__":
-    return_chat_history()
-
-    
+# DEBUG
+# if __name__ == "__main__":
+#     return_chat_history()

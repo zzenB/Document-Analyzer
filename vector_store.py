@@ -1,10 +1,9 @@
 import argparse
 import os
 import shutil
-import time
 
 from langchain.schema.document import Document
-from get_embedding_function import get_embedding_function
+from llm_utils import get_embedding_function
 from langchain_community.vectorstores.chroma import Chroma
 from preprocess import documents_directory_loader, split_documents
 
@@ -21,13 +20,24 @@ types = [
 ]
 
 def load_vector_store():
+    # Load the vector store db
     embedding_function = get_embedding_function()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
     return db
 
 def run_database():
-    start_time = time.time() 
-    # Check if the database should be cleared (using the --clear flag).
+    """
+    Runs the database process.
+
+    This function checks if the database should be cleared using the --reset flag.
+    If the flag is provided, the function clears the database and then proceeds to process the files.
+    The function processes different file types, loads the documents from the 'data/' directory,
+    splits the documents into chunks, and adds the chunks to the chroma.
+
+    Returns:
+        bool: True if the database process is completed successfully.
+    """
+    # Check if the database should be cleared (using the --reset flag).
     parser = argparse.ArgumentParser()
     parser.add_argument("--reset", action="store_true", help="Reset the database.")
     args = parser.parse_args()
@@ -46,17 +56,22 @@ def run_database():
         # print(f"Chunks: {chunks}")
         add_to_chroma(file_type, chunks)
 
-    end_time = time.time()
-    print(f"Time taken: {(end_time - start_time):.2f} seconds")
     return True
 
 def clear_database():
+    # Clear database function
     if os.path.exists(CHROMA_PATH):
         shutil.rmtree(CHROMA_PATH)
     else:
         print("No database to clear.")
 
 def docs_used_in_chroma():
+    """
+    Retrieves the list of documents used in the chroma analysis.
+
+    Returns:
+        list: A list of document IDs used in the chroma analysis.
+    """
     db = load_vector_store()
     all_ids = db.get(include=[])["ids"]
 
@@ -67,6 +82,16 @@ def docs_used_in_chroma():
 
 
 def add_to_chroma(file_type: str, chunks: list[Document]):
+    """
+    Adds new documents to the Chroma database.
+
+    Args:
+        file_type (str): The type of file being added.
+        chunks (list[Document]): A list of Document objects representing the new documents.
+
+    Returns:
+        None
+    """
     # Load the existing database.
     db = Chroma(
         persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
@@ -122,6 +147,6 @@ def calculate_chunk_ids(chunks):
 
     return chunks
 
-if __name__ == "__main__":
-    run_database()
-    # docs_used_in_chroma()
+# DEBUG
+# if __name__ == "__main__":
+#     run_database()

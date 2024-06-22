@@ -15,7 +15,6 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_history_aware_retriever
 from langchain_core.prompts import MessagesPlaceholder
 
-# from langchain_core.messages import HumanMessage, AIMessage
 from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
@@ -27,6 +26,15 @@ chat_history = {}
 CHROMA_PATH = "chroma"
 
 def create_chain(model: str):
+    """
+    Creates a retrieval chain for answering user's questions about documents.
+
+    Args:
+        model (str): The model to be used for generating responses.
+
+    Returns:
+        retrieval_chain: The retrieval chain for answering user's questions.
+    """
     if model == "gpt-3.5-turbo-0125" or model == "gpt-4-turbo":
         model = ChatOpenAI(model=model)
     else:
@@ -37,7 +45,6 @@ def create_chain(model: str):
     retriever = db.as_retriever(search_kwargs={"k": 3})
 
     # Initialize the chains
-    # prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt_template = ChatPromptTemplate.from_messages([
         ("system", "You are a virtual assistant chatbot responsible for answering user's questions about documents. The following context is from a single or set of documents. Use ONLY the following pieces of context to answer the user's question. If you don't know the answer, just say that you don't know, don't try to make up an answer: {context}"),
         MessagesPlaceholder(variable_name="chat_history"),
@@ -68,7 +75,20 @@ def create_chain(model: str):
     return retrieval_chain
 
 def process_chat(chain, query_text, session_id):
+    """
+    Process a chat message using a given chain.
 
+    Args:
+        chain (RunnableWithMessageHistory): The chain to process the chat message.
+        query_text (str): The text of the chat message.
+        session_id (str): The session ID for the chat.
+
+    Returns:
+        tuple: A tuple containing the response and sources. The response is a dictionary
+        containing the processed chat message and other information. The sources is a list
+        of document IDs associated with the response.
+
+    """
     history_chain = RunnableWithMessageHistory(
         chain,
         # get_session_history,
@@ -91,11 +111,22 @@ def process_chat(chain, query_text, session_id):
 
 
 def query_rag(model: str, session_id: str, query_text: str):
+    """
+    Queries the RAG (Retrieval-Augmented Generation) model with the given parameters.
+
+    Args:
+        model (str): The name of the RAG model to use.
+        session_id (str): The session ID for the query.
+        query_text (str): The text of the query.
+
+    Returns:
+        list: A list containing the formatted response, formatted sources, and sources.
+    """
     chain = create_chain(model)
     response, sources = process_chat(chain, query_text, session_id)
 
-    f_answer = f"{response["answer"]}<br>"
-    f_sources = f"<b>Sources:</b><ul>"
+    f_answer = f"{response['answer']}<br>"
+    f_sources = "<b>Sources:</b><ul>"
     for source in sources:
         f_sources += f"<li>{source}</li>"
     f_sources += "</ul>"
@@ -106,5 +137,6 @@ def query_rag(model: str, session_id: str, query_text: str):
     update_message_with_sources(session_id, sources)
     
     return formatted_response
-if __name__ == "__main__":
-    print(query_rag("gpt-3.5-turbo-0125", "4", "What is fuzzy set then?"))
+# DEBUG
+# if __name__ == "__main__":
+#     print(query_rag("gpt-3.5-turbo-0125", "4", "What is fuzzy set then?"))

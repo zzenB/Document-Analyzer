@@ -11,6 +11,6 @@ def select_files_and_move(destination_folder, selectedFiles):
         except Exception as e:
             print(f"Error moving {file_path}: {e}")
             return False
-
+# DEBUG
 # if __name__ == "__main__":
 #     select_files_and_move("data")

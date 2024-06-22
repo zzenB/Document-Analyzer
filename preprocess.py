@@ -13,6 +13,17 @@ types = {
 }
 
 def documents_directory_loader(file_type, DATA_PATH):
+    """
+    Load documents from a directory based on the specified file type.
+
+    Args:
+        file_type (str): The file type to filter the documents (e.g., '.txt', '.pdf').
+        DATA_PATH (str): The path to the directory containing the documents.
+
+    Returns:
+        list: A list of loaded documents.
+
+    """
     document_loader = DirectoryLoader(
         path=DATA_PATH, 
         glob=f"**/*{file_type}", 
@@ -23,6 +34,16 @@ def documents_directory_loader(file_type, DATA_PATH):
     return document_loader.load()
 
 def split_documents(documents: list[Document]):
+    """
+    Splits a list of documents into smaller chunks using a text splitter.
+
+    Args:
+        documents (list[Document]): The list of documents to be split.
+
+    Returns:
+        list[Document]: The list of split documents.
+
+    """
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1024,
         chunk_overlap=80,

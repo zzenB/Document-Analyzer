@@ -79,6 +79,16 @@ def create_summary_chain(model):
     return map_reduce_chain
 
 def summarize_docs(model, session_id):
+    """
+    Summarizes documents using the specified model.
+
+    Args:
+        model (str): The model to use for summarization.
+        session_id (str): The session ID for the chat history.
+
+    Returns:
+        str: The summaries of the documents.
+    """
     split_docs = []
     for file_type in types:
         documents = documents_directory_loader(file_type, DATA_PATH)

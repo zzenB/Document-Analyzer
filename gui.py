@@ -167,38 +167,36 @@ class DocAnalyzerUI(QMainWindow):
     """
     The main user interface class for the Document Analyzer application.
 
-    This class extends the QMainWindow class from the PyQt5 library and provides
-    the graphical user interface for the application. It includes methods for
-    initializing the UI, loading chats and PDFs, creating the left sidebar,
-    creating sidebar buttons, uploading documents, handling database operations,
-    creating information bars, creating new chats, opening settings, creating the
-    right main area, displaying chat content, checking and sending messages.
+    This class extends the QMainWindow class from PyQt5 and provides the main window
+    and user interface elements for the application. It handles the initialization of
+    the UI, loading of chats and PDFs, creation of the left sidebar, creation of the
+    right main area, and various other UI-related functionalities.
 
     Attributes:
         chat_list (QListWidget): The list widget for displaying chat names.
         doc_list (QListWidget): The list widget for displaying document names.
-        chat_contents (dict): A dictionary to store the contents of each chat.
+        chat_contents (dict): A dictionary containing the contents of each chat.
         selected_model (str): The currently selected AI model.
         selected_chat (str): The currently selected chat.
 
     Methods:
         __init__(): Initializes the DocAnalyzerUI class.
-        init_ui(): Initializes the user interface.
-        load_chats(): Loads the chat history into the chat list.
-        load_pdfs(): Loads the available PDFs into the document list.
+        init_ui(): Initializes the user interface elements.
+        load_chats(): Loads the chat history and adds chat names to the chat list.
+        load_pdfs(): Loads the PDF sources and adds them to the document list.
         create_left_sidebar(parent_layout): Creates the left sidebar layout.
-        create_list_widget(str): Creates a list widget with custom styling.
-        create_sidebar_buttons(sidebar_layout): Creates buttons for the sidebar.
+        create_list_widget(str): Creates a list widget with the specified style.
+        create_sidebar_buttons(sidebar_layout): Creates the buttons in the sidebar.
         upload_documents(): Opens a file dialog for uploading documents.
         database_operation_finished(result): Handles the completion of database operations.
-        createWarningInfoBar(title, content): Creates a warning information bar.
-        createSuccessInfoBar(title, content): Creates a success information bar.
-        createErrorInfoBar(title, content): Creates an error information bar.
+        createWarningInfoBar(title, content): Creates a warning info bar.
+        createSuccessInfoBar(title, content): Creates a success info bar.
+        createErrorInfoBar(title, content): Creates an error info bar.
         new_chat(): Creates a new chat.
         open_settings(): Opens the settings dialog.
         create_right_main_area(parent_layout): Creates the right main area layout.
-        display_chat_content(item): Displays the content of a selected chat.
-        check_and_send(): Checks and sends a message.
+        display_chat_content(item): Displays the content of the selected chat.
+        check_and_send(): Checks if a model and chat are selected before sending a message.
     """
     def __init__(self):
         super().__init__()
@@ -442,9 +440,7 @@ class DocAnalyzerUI(QMainWindow):
 
         formatted_chat = ""
         for message in content:
-            role = list(message.keys())[
-                0
-            ]  # Get the first key (assuming there's only one key)
+            role = list(message.keys())[0]  # Get the first key (assuming there's only one key)
             data = message[role]
 
             if role == "human":
