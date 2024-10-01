@@ -1,6 +1,6 @@
 **🗎 Document Analyzer** 
 ===============	
-Group 6 SE AOL Project. Coded using Python. Based on pixegami video's for base code (heavily modified). 
+SE Project. Document Analyzer/Summarizer using langchain for RAG purpose. Coded only using Python. Based on pixegami video's for base code (heavily modified). 
 Requires **Ollama** for local models and **OpenAI API** for online models<br>
 To run the source code:
 1. Clone the project `git clone https://github.com/zzenB/Document-Analyzer.git`
